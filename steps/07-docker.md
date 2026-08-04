@@ -1,7 +1,7 @@
 # Step 7 — Build a Docker Image in the Pipeline
 
-**Goal:** the final piece. Add a stage that builds a **Docker image** of the app. This is
-exactly Goal 4 of Iteration 2, practised on the tiny app first.
+**Goal:** the final piece. Add a job that builds a **Docker image** of the app. Good news:
+this is *easier* on GitHub than on GitLab.
 
 ---
 
@@ -19,103 +19,99 @@ docker run --rm calculator-app
 You should see the calculator demo print from inside a container. That's your app, packaged
 so it runs the same anywhere. ✅
 
-> If Docker isn't installed yet — install it now. Iteration 2 requires **everyone** to run
-> Docker on their own machine. Don't leave it to the last week.
+> Install Docker on your machine if you haven't — it's a core skill and many projects
+> require you to demo it locally.
 
 ---
 
-## 7.2 — Building Docker *inside* the pipeline (docker-in-docker)
+## 7.2 — Docker in the pipeline (GitHub makes this simple)
 
-Building an image inside a pipeline job is special: the job itself runs in a container, and
-now it needs to run `docker build` — a container building a container. GitLab handles this
-with a **service** called `docker:dind` ("Docker-in-Docker").
+Here's the nice part: **GitHub's `ubuntu-latest` runners come with Docker already
+installed.** So building an image in a job is just… running `docker build`. No special
+"Docker-in-Docker" service like GitLab needs.
 
-Add a `package` stage:
+Add a third job:
 
 ```yaml
-stages:
-  - test
-  - build
-  - package
-
-# ... run-tests and build-jar jobs from before ...
-
-build-docker-image:
-  stage: package
-  image: docker:latest
-  services:
-    - docker:dind
-  script:
-    - docker build -t calculator-app .
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: build-jar
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t calculator-app .
 ```
 
-Reading the new job:
-- `image: docker:latest` — the job runs in an image that has the `docker` command
-- `services: [docker:dind]` — starts a Docker engine the job can talk to
-- `script: docker build ...` — builds the image, same command as local
+That's it. `checkout` puts the Dockerfile + source on the runner, and `docker build` just
+works because Docker is preinstalled.
 
 ---
 
-## 7.3 — The complete pipeline
+## 7.3 — The complete workflow
 
-Your full `.gitlab-ci.yml` now:
+Your full `.github/workflows/ci.yml` now:
 
 ```yaml
-stages:
-  - test
-  - build
-  - package
+name: CI Pipeline
 
-run-tests:
-  stage: test
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - mvn test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-build-jar:
-  stage: build
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - mvn package -DskipTests
-  artifacts:
-    paths:
-      - target/*-jar-with-dependencies.jar
-    expire_in: 1 week
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: mvn test
 
-build-docker-image:
-  stage: package
-  image: docker:latest
-  services:
-    - docker:dind
-  script:
-    - docker build -t calculator-app .
+  build-jar:
+    runs-on: ubuntu-latest
+    needs: run-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: mvn package -DskipTests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*-jar-with-dependencies.jar
+
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: build-jar
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t calculator-app .
 ```
 
 Push it:
 ```bash
-git add .gitlab-ci.yml Dockerfile
+git add .github/workflows/ci.yml Dockerfile
 git commit -m "build docker image in pipeline"
 git push
 ```
 
-Watch three stages run in order: **test → build → package**. The last one builds your
-container image. 🎉
+Watch three jobs run in order: **run-tests → build-jar → build-docker-image**. The last one
+builds your container image. 🎉
 
 ---
 
-## 7.4 — If docker-in-docker doesn't work on WeThinkCode's runners
+## 7.4 — Optional: push the image to a registry
 
-Some shared runners don't allow `docker:dind` for security reasons. If the docker job fails
-with a permissions or "cannot connect to the Docker daemon" error:
-
-- It's a **runner configuration** issue, not your YAML. Ask a coach whether dind is enabled.
-- Fallback: you can still demo `docker build` **locally** on each machine (which Iteration 2
-  requires anyway), and keep test + build automated in the pipeline.
-
-Don't burn hours fighting the runner — get test+build green in CI, and demo Docker locally.
+Right now the image is built then thrown away. To *keep* it, you'd push it to a registry
+(GitHub has one: `ghcr.io`). That needs login credentials and is beyond this tutorial — but
+know it exists. For learning, building the image proves the pipeline works.
 
 ---
 
-✅ **Done when:** your pipeline runs test → build → package, and the last stage builds a
-Docker image (or you've confirmed dind isn't available and can build locally). Next:
-**[Step 8 — Apply it to Robot World](08-apply-to-robot-world.md)**.
+✅ **Done when:** your workflow runs test → build → docker in order, and the last job builds
+a Docker image. Next: **[Step 8 — Apply to your project](08-apply-to-your-project.md)**.

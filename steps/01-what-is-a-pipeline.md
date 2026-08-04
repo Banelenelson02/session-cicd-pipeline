@@ -6,8 +6,8 @@ We promised learning by doing, so this is the *only* concept page. Five minutes,
 
 ## The one-sentence version
 
-> A **pipeline** is a robot that runs your build commands automatically, on a server,
-> every time you push code.
+> A **pipeline** (GitHub calls it a **workflow**) is a robot that runs your build commands
+> automatically, on a server, every time you push code.
 
 That's it. Everything else is detail.
 
@@ -29,46 +29,59 @@ passes. That's the whole model.
 
 ---
 
-## Four words you need (and nothing more)
+## Five words you need (GitHub terms)
 
 | Word | Plain meaning |
 |------|---------------|
-| **Pipeline** | The whole conveyor belt — all the stations together |
-| **Job** | One station — one unit of work (e.g. "run the tests") |
-| **Stage** | A group of jobs that run at the same point on the belt (e.g. all "test" jobs) |
-| **Runner** | The actual machine that does the work. GitLab sends your job to a runner. |
+| **Workflow** | The whole conveyor belt — one `.yml` file describing everything |
+| **Job** | One station — a unit of work that runs on a runner (e.g. "run the tests") |
+| **Step** | A single action inside a job (one command, or one reusable action) |
+| **Runner** | The machine that does the work. GitHub gives you free hosted ones. |
+| **Action** | A reusable, pre-made step you pull in with `uses:` (e.g. "checkout the code") |
 
 ---
 
-## How GitLab knows what to do
+## How GitHub knows what to do
 
-You put **one file** in your repo root:
+You put a workflow file in this special folder:
 
 ```
-.gitlab-ci.yml
+.github/workflows/ci.yml
 ```
 
-GitLab watches for this file. When you push, it reads the file and runs whatever jobs you
-defined. No file = no pipeline. That's the entire trigger mechanism.
+GitHub watches that folder. When you push, it reads any workflow files there and runs the
+jobs you defined. No file = no pipeline. That's the entire trigger mechanism.
+
+> The filename (`ci.yml`) can be anything ending in `.yml` — it just has to live in
+> `.github/workflows/`.
 
 ---
 
-## GitLab vs GitHub (so online tutorials don't confuse you)
+## Two GitHub ideas that GitLab doesn't have
 
-You'll find lots of "CI/CD" tutorials online using **GitHub Actions**. Same concept,
-different vendor:
-
-| | GitHub | GitLab (us) |
-|---|--------|-------------|
-| File location | `.github/workflows/*.yml` | `.gitlab-ci.yml` (repo root) |
-| Called | "Actions" | "CI/CD" / "pipelines" |
-| Worker | "runner" | "runner" |
-
-The *ideas* are identical. We use GitLab because that's where Robot World lives. If you see
-`on: push` and `jobs:` and `runs-on` — that's GitHub syntax, mentally translate it.
+1. **`uses:` actions.** GitHub has a marketplace of reusable steps. Instead of writing
+   scripts to check out code or install Java, you "use" a ready-made action:
+   `uses: actions/checkout@v4`. Think of them as importing a helper.
+2. **Jobs run in parallel by default.** Unlike GitLab's ordered "stages," GitHub jobs all
+   start at once — *unless* you say one `needs:` another. You'll use `needs` in Step 5 to
+   force test → build order.
 
 ---
 
-✅ **Done when:** you can explain "pipeline", "job", "stage", and "runner" to each other in
-one sentence each. Next: **[Step 2 — Your first pipeline](02-first-pipeline.md)** — we write
-actual YAML now.
+## If you've seen GitLab tutorials
+
+Same concepts, different names:
+
+| Concept | GitHub (us) | GitLab |
+|---------|-------------|--------|
+| The file | `.github/workflows/*.yml` | `.gitlab-ci.yml` (repo root) |
+| A unit of work | job → steps | job → script |
+| Ordering | `needs:` | `stages:` |
+| Reusable step | `uses: some/action` | (write the shell command) |
+| Worker | runner (GitHub-hosted) | runner |
+
+---
+
+✅ **Done when:** you can explain "workflow", "job", "step", "runner", and "action" to each
+other in one sentence each. Next: **[Step 2 — Your first workflow](02-first-workflow.md)** —
+we write actual YAML now.

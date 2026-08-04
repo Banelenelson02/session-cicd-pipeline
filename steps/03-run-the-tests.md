@@ -1,100 +1,92 @@
-# Step 3 — Make the Pipeline Run Your Tests
+# Step 3 — Make the Workflow Run Your Tests
 
-**Goal:** replace the "hello" job with one that actually compiles the code and runs the
-JUnit tests — automatically, on every push. This is the core of CI.
-
----
-
-## 3.1 — The problem: the runner needs Java + Maven
-
-Your `echo` worked because every runner can echo. But to run `mvn test`, the runner needs
-**Maven and Java installed**. We don't want to install them by hand — instead we tell the
-job to run **inside a Docker image** that already has them.
-
-That's what the `image:` keyword does:
-
-```yaml
-run-tests:
-  image: maven:3.9-eclipse-temurin-21    # a ready-made box with Maven + Java 21
-  script:
-    - mvn test
-```
-
-- `image:` — the runner starts a container from this image and runs your `script` inside it
-- `maven:3.9-eclipse-temurin-21` — an official image with Maven 3.9 and Java 21 preinstalled
-
-> **Why this is great:** you don't manage Java versions on the runner. The image guarantees
-> the exact tools you need, every run, identical for everyone. (This is the same idea as
-> Docker in Iteration 2 — reproducible environments.)
+**Goal:** replace the "hello" job with one that actually checks out the code, installs Java,
+and runs the JUnit tests — automatically, on every push. This is the core of CI.
 
 ---
 
-## 3.2 — Replace your pipeline
+## 3.1 — The problem: the runner is empty
 
-Change `.gitlab-ci.yml` to:
+Your `echo` worked because every runner can echo. But to run `mvn test`, the runner needs:
+1. **your code** on it (the runner starts empty!)
+2. **Java** installed
+
+On GitHub you solve both with pre-made **actions** — reusable steps you pull in with `uses:`.
 
 ```yaml
-# Compile and test the app automatically on every push.
-run-tests:
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - mvn test
+    steps:
+      - uses: actions/checkout@v4        # step 1: put my code on the runner
+      - uses: actions/setup-java@v4      # step 2: install Java
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: mvn test                    # step 3: now run the tests
 ```
+
+- `actions/checkout@v4` — the official action that clones your repo onto the runner. **Almost
+  every workflow starts with this.** Without it, the runner has no code.
+- `actions/setup-java@v4` — installs the Java version you ask for under `with:`
+- `mvn test` — now that code + Java are present, this works
+
+> **Why actions?** On GitLab you'd pick a Maven Docker image that already has Java. On GitHub
+> you start from a bare Ubuntu runner and *add* what you need with actions. Different route,
+> same destination.
+
+---
+
+## 3.2 — Replace your workflow
+
+Change `.github/workflows/ci.yml` to:
+
+```yaml
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: mvn test
+```
+
+Note the improved `on:` block — it now runs on pushes to `main` **and** on pull requests
+targeting `main`. That's the standard setup.
 
 Push it:
 ```bash
-git add .gitlab-ci.yml
+git add .github/workflows/ci.yml
 git commit -m "run tests in the pipeline"
 git push
 ```
 
-Go to **Build → Pipelines**, open the `run-tests` job, and watch the Maven output scroll by
-— the same `Tests run: 5, Failures: 0` you saw locally, now running on the runner. ✅
+Open the **Actions** tab, click into `run-tests`, and watch the Maven output — the same
+`Tests run: 5, Failures: 0` you saw locally, now on the runner. ✅
 
 ---
 
-## 3.3 — Make the pipeline only run on the right branches (optional but good)
+## 3.3 — Speed tip: cache Maven downloads (optional)
 
-Right now it runs on every push to every branch. Usually you want it on `main` and on merge
-requests. Add a `rules:` or `only:` clause:
-
-```yaml
-run-tests:
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - mvn test
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-```
-
-- first rule: run when someone pushes to `main`
-- second rule: run when someone opens/updates a merge request
-
-> The Iteration 2 brief says the pipeline must "run when new commits are made to your main
-> branch" — that first rule is exactly that requirement.
-
----
-
-## 3.4 — Speed tip: cache Maven downloads (optional)
-
-Maven re-downloads dependencies every run, which is slow. Cache them:
+`setup-java` can cache Maven dependencies for you — just add `cache: maven`:
 
 ```yaml
-run-tests:
-  image: maven:3.9-eclipse-temurin-21
-  cache:
-    key: maven-repo
-    paths:
-      - .m2/repository
-  variables:
-    MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-  script:
-    - mvn test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
 ```
 
-Don't stress about this one — it's a nice-to-have. Understanding `image` and `script` is
-what matters.
+Nice-to-have. Understanding `checkout`, `setup-java`, and `run` is what matters.
 
 ---
 

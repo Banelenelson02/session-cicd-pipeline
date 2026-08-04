@@ -1,6 +1,6 @@
 # Step 0 — Setup
 
-**Goal:** get this repo onto GitLab and confirm it builds on your machine, so every later
+**Goal:** get this repo onto GitHub and confirm it builds on your machine, so every later
 step has a foundation.
 
 ---
@@ -29,35 +29,36 @@ You should see the calculator demo print. ✅
 
 ---
 
-## 0.2 — Put this repo on GitLab
+## 0.2 — Put this repo on GitHub
 
-1. On `gitlab.wethinkco.de`, create a **new blank project** (call it `cicd-tutorial`).
+1. On GitHub, create a **new empty repository** (call it `cicd-tutorial`). Don't add a
+   README — this repo already has one.
 2. In this folder, point git at it and push:
 
 ```bash
 git init
 git add .
 git commit -m "initial tutorial project"
-git remote add origin git@gitlab.wethinkco.de:YOUR-USERNAME/cicd-tutorial.git
+git remote add origin https://github.com/YOUR-USERNAME/cicd-tutorial.git
 git branch -M main
 git push -u origin main
 ```
 
-Replace `YOUR-USERNAME` with your actual GitLab path.
+Replace `YOUR-USERNAME` with your actual GitHub username.
 
 ---
 
-## 0.3 — Check that runners exist ⚠️ (do this now, it's the #1 blocker)
+## 0.3 — Runners: the good news on GitHub
 
-A pipeline needs a **runner** — a machine that actually executes it. If your project has no
-runner, your pipeline will sit "pending" forever and you'll think you did something wrong.
+A pipeline needs a **runner** — a machine that executes it. On GitHub, this is easy:
+**GitHub gives you free hosted runners automatically** (Ubuntu, Windows, Mac). You don't set
+anything up. When you push a workflow, GitHub finds a runner for you.
 
-On GitLab: **your project → Settings → CI/CD → Runners**. You should see at least one
-**active** runner (usually a shared "instance runner" provided by WeThinkCode).
+> On GitLab you'd have to check that a runner is enabled. On GitHub public repos, it's
+> handled for you. One less thing to worry about while learning.
 
-- **Green/active runner listed?** → you're good, continue.
-- **No runners?** → ask a coach whether shared runners are enabled for student projects.
-  Sort this **before** Iteration 2, or the real pipeline won't run either.
+To confirm Actions is enabled: **your repo → Settings → Actions → General** → make sure
+"Allow all actions" is selected (it usually is by default).
 
 ---
 
@@ -81,5 +82,5 @@ git push
 
 ---
 
-✅ **Done when:** the app builds locally, the repo is on GitLab, and you can see an active
-runner. Next: **[Step 1 — What is a pipeline?](01-what-is-a-pipeline.md)**
+✅ **Done when:** the app builds locally, the repo is on GitHub, and Actions is enabled.
+Next: **[Step 1 — What is a pipeline?](01-what-is-a-pipeline.md)**

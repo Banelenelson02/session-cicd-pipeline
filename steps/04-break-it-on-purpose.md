@@ -27,7 +27,8 @@ git push
 
 ## 4.2 — Watch it go red
 
-Go to **Build → Pipelines**. The pipeline runs, and this time it turns **red** ❌.
+Go to the **Actions** tab. The workflow runs, and this time it turns **red** ❌. You'll also
+get a red X next to your commit, and GitHub emails you that the run failed.
 
 Open the `run-tests` job log and scroll to the failure. You'll see something like:
 
@@ -75,20 +76,27 @@ git commit -m "fix add()"
 git push
 ```
 
-Pipeline goes **green** ✅. That red → fix → green loop is what you'll live in during
-Iteration 2.
+Run goes **green** ✅. That red → fix → green loop is what real teams live in.
 
 ---
 
-## 4.5 — Team reflection (talk about this)
+## 4.5 — Bonus: protect main with the green check
+
+Once CI is green, GitHub lets you **require it to pass before merging**. In
+**Settings → Branches → Add branch protection rule**, target `main`, tick "Require status
+checks to pass before merging," and pick your CI check. Now nobody can merge red code into
+`main`. That's the pipeline enforcing quality, not just reporting it.
+
+---
+
+## 4.6 — Team reflection (talk about this)
 
 - What would have happened *without* the pipeline? (Someone pulls broken `main`, wastes an
   hour wondering why their build fails.)
 - How is this better than "remember to run the tests"? (It's not optional — the machine
   always runs them.)
-- This is why the Iteration 2 brief wants the pipeline on `main`: so `main` is always known-good.
 
 ---
 
 ✅ **Done when:** you've seen the pipeline catch a real bug and you can read a failure log.
-Next: **[Step 5 — Stages](05-stages.md)** — chaining multiple jobs in order.
+Next: **[Step 5 — Jobs and needs](05-jobs-and-needs.md)** — chaining jobs in order.

@@ -14,5 +14,3 @@ public class App {
         System.out.println("20 / 5 = " + calc.divide(20, 5));
     }
 }
-
-//kani
