@@ -16,6 +16,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: mvn test
+
   build-jar:
     runs-on: ubuntu-latest
     needs: run-tests
@@ -31,3 +32,9 @@ jobs:
           name: app-jar
           path: target/*-jar-with-dependencies.jar
 
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: build-jar
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t calculator-app .
